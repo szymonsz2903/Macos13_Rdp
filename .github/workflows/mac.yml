@@ -9,19 +9,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install cloudflared
         run: |
           brew update
-          brew install cloudflare/cloudflare/cloudflare jq
-
-      - name: Start VNC server
-        run: |
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
-            -activate -configure -access -on \
-            -restart -agent -privs -all
+          brew install cloudflared
 
       - name: Start Cloudflare tunnel
         run: |
           cloudflared tunnel --url tcp://localhost:5900 > tunnel.log &
-          sleep 6
+          sleep 5
           cat tunnel.log
