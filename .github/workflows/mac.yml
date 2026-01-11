@@ -1,4 +1,4 @@
-name: macOS tmate Session
+name: macOS VNC via Cloudflare
 
 on:
   workflow_dispatch:
@@ -9,5 +9,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start tmate session
-        uses: mxschmitt/action-tmate@v2
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install cloudflare/cloudflare/cloudflare jq
+
+      - name: Start VNC server
+        run: |
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -activate -configure -access -on \
+            -restart -agent -privs -all
+
+      - name: Start Cloudflare tunnel
+        run: |
+          cloudflared tunnel --url tcp://localhost:5900 > tunnel.log &
+          sleep 6
+          cat tunnel.log
