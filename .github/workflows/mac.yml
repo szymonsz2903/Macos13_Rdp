@@ -1,6 +1,8 @@
 name: MacOS X RDP
-on: 
+
+on:
   workflow_dispatch:
+
 defaults:
   run:
     shell: bash
@@ -8,15 +10,37 @@ defaults:
 jobs:
   build:
     runs-on: macos-15
+
     steps:
-    - uses: actions/checkout@v2
-    - name: Setting the environment up.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install ngrok jq
+
+    - name: Configure ngrok
+      run: |
+        ngrok config add-authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
+
+    - name: Setting the environment up
       env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        VNC_USER_PASSWORD: ${{ secrets.VNC_USER_PASSWORD }}
         VNC_PASSWORD: ${{ secrets.VNC_PASSWORD }}
-      run: source configure.sh "$VNC_PASSWORD" "$VNC_PASSWORD" "$NGROK_AUTH_TOKEN"
+      run: |
+        chmod +x configure.sh
+        ./configure.sh "$VNC_PASSWORD" "$VNC_PASSWORD"
+
+    # ⏱ IMPORTANT: ensure ngrok is actually running
+    - name: Start ngrok (VNC)
+      run: |
+        ngrok tcp 5900 > /dev/null &
+        sleep 6
+
     - name: ngrok is now listening to VNC connections on...
-      run: curl --silent http://127.0.0.1:4040/api/tunnels | jq '.tunnels[0].public_url'
+      run: |
+        curl --silent http://127.0.0.1:4040/api/tunnels \
+        | jq -r '.tunnels[0].public_url'
+
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v2
